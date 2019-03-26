@@ -165,6 +165,43 @@ class TestPhase:
         div3 = 0.5 * u.s / self.phase
         assert_equal(div3, 1. / div)
 
+    def test_floor_division_mod(self):
+        fd = self.phase // (1. * u.cycle)
+        fd_exp = self.phase.int.copy()
+        fd_exp[self.phase.frac < 0] -= 1 * u.cycle
+        fd_exp = fd_exp / u.cycle
+        assert_equal(fd, fd_exp)
+        mod = self.phase % (1. * u.cycle)
+        mod_exp = Phase(np.where(self.phase.frac >= 0., 0., 1.),
+                        self.phase.frac)
+        assert_equal(mod, mod_exp)
+        exp_cycle = Angle(self.phase.frac, copy=True)
+        exp_cycle[exp_cycle < 0.] += 1. * u.cycle
+        assert_equal(mod.cycle, exp_cycle)
+        dm = divmod(self.phase, 1. * u.cycle)
+        assert_equal(dm[0], fd_exp)
+        assert_equal(dm[1], mod_exp)
+        #
+        fd2 = self.phase // (360. * u.degree)
+        assert_equal(fd2, fd_exp)
+        mod2 = self.phase % (360 * u.degree)
+        assert_equal(mod2, mod_exp)
+        dm2 = divmod(self.phase, 360 * u.degree)
+        assert_equal(dm2[0], fd_exp)
+        assert_equal(dm2[1], mod_exp)
+        #
+        fd3 = self.phase // (240. * u.hourangle)
+        fd3_exp = fd_exp // 10
+        assert_equal(fd3, fd3_exp)
+        mod3 = self.phase % (240. * u.hourangle)
+        mod_int_exp = self.phase.int % (10 * u.cy)
+        mod_int_exp[0][self.phase.frac[0] < 0] += 10. * u.cy
+        mod3_exp = Phase(mod_int_exp, self.phase.frac)
+        assert_equal(mod3, mod3_exp)
+        dm3 = divmod(self.phase, 240. * u.hourangle)
+        assert_equal(dm3[0], fd3_exp)
+        assert_equal(dm3[1], mod3_exp)
+
     @pytest.mark.parametrize('axis', (None, 0, 1))
     def test_min(self, axis):
         m = self.phase.min(axis=axis)

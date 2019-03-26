@@ -280,6 +280,25 @@ class Phase(Angle):
                     else:
                         return self.from_angles(self['int'], self['frac'],
                                                 divisor=other.value)
+        elif (function in {np.floor_divide, np.remainder, np.divmod} and
+              inputs[0] is self):
+            fd = np.floor_divide(self.cycle, inputs[1])
+            corr = Phase.from_angles(inputs[1], 0. * u.cycle, factor=fd)
+            remainder = self - corr
+            fdx = np.floor_divide(remainder.cycle, inputs[1])
+            # This can likely be optimized...
+            if fdx.nonzero()[0].size:
+                fd += fdx
+                corr = Phase.from_angles(inputs[1], 0. * u.cycle, factor=fd)
+                remainder = self - corr
+
+            if function is np.floor_divide:
+                return fd
+            elif function is np.remainder:
+                return remainder
+            else:
+                return fd, remainder
+
         elif function is np.positive:
             return self.copy()
 
